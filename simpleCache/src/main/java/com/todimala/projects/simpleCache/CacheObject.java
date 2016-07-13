@@ -7,53 +7,53 @@ import rx.Subscription;
 
 public class CacheObject<T> {
 
-	private T value;
-	private Calendar lastAccessed;
-	private Long duration;
-	private boolean expired;
-	public Observable<Long> observable;
-	public Subscription timerSubscription;
-	
-	public CacheObject(T val) {
-		this.value = val;
-		this.duration = Long.getLong(
-							SimpleCacheProperties.appProps.getProperty(
-									SimpleCacheProperties.CACHE_DURATION_INSEC));
-		this.lastAccessed = Calendar.getInstance();
-		this.setExpired(false);
-	}
+    private T value;
+    private Calendar lastAccessed;
+    private Long duration;
+    private boolean expired;
+    public Observable<Long> observable;
+    public Subscription timerSubscription;
+    
+    public CacheObject(T val) {
+        this.value = val;
+        this.duration = Long.getLong(
+                            SimpleCacheProperties.appProps.getProperty(
+                                    SimpleCacheProperties.CACHE_DURATION_INSEC));
+        this.lastAccessed = Calendar.getInstance();
+        this.setExpired(false);
+    }
 
-	public T getValue() {
-		this.lastAccessed = Calendar.getInstance();
-		return value;
-	}
+    public T getValue() {
+        this.lastAccessed = Calendar.getInstance();
+        return value;
+    }
 
-	public void setValue(T value) {
-		this.lastAccessed = Calendar.getInstance();
-		this.value = value;
-	}
+    public void setValue(T value) {
+        this.lastAccessed = Calendar.getInstance();
+        this.value = value;
+    }
 
-	public Calendar getLastAccessed() {
-		return lastAccessed;
-	}
+    public Calendar getLastAccessed() {
+        return lastAccessed;
+    }
 
-	protected void setLastAccessed(Calendar lastAccessed) {
-		this.lastAccessed = lastAccessed;
-	}
+    protected void setLastAccessed(Calendar lastAccessed) {
+        this.lastAccessed = lastAccessed;
+    }
 
-	public Long getDuration() {
-		return duration;
-	}
+    public Long getDuration() {
+        return duration;
+    }
 
-	public void setDuration(Long duration) {
-		this.duration = duration;
-	}
+    public void setDuration(Long duration) {
+        this.duration = duration;
+    }
 
-	public boolean isExpired() {
-		return expired;
-	}
+    public boolean isExpired() {
+        return expired;
+    }
 
-	public void setExpired(boolean expired) {
-		this.expired = expired;
-	}
+    public void setExpired(boolean expired) {
+        this.expired = expired;
+    }
 }

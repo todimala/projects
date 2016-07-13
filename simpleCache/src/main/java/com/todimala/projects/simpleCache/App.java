@@ -8,12 +8,12 @@ import org.apache.log4j.Logger;
  */
 public class App 
 {
-	final static Logger logger = Logger.getLogger(App.class);
-	
+    final static Logger logger = Logger.getLogger(App.class);
+    
     public static void main( String[] args )
     {
-    	// simple Test 
-    	App.test();
+        // simple Test 
+        App.test();
     }
     
     public static void test() {
@@ -21,10 +21,10 @@ public class App
         myCache.put("name", "Mickey", (long)4.0);
         logger.info("Before: The name value in cache is : " + myCache.get("name"));
         try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         logger.info("After: The name value in cache is : " + myCache.get("name"));
     }
 }
