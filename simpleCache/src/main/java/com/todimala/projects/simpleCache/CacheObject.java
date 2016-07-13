@@ -16,7 +16,9 @@ public class CacheObject<T> {
 	
 	public CacheObject(T val) {
 		this.value = val;
-		this.duration = (long)3600.0; // One hour in seconds
+		this.duration = Long.getLong(
+							SimpleCacheProperties.appProps.getProperty(
+									SimpleCacheProperties.CACHE_DURATION_INSEC));
 		this.lastAccessed = Calendar.getInstance();
 		this.setExpired(false);
 	}

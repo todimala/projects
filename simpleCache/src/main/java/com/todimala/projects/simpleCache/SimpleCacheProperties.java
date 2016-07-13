@@ -5,11 +5,13 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-public class SimpleCacheProperties {
+public final class SimpleCacheProperties {
 
-	final static Logger logger = Logger.getLogger(App.class);
+	private SimpleCacheProperties(){}
+	static final Logger logger = Logger.getLogger(App.class);
 	static Properties appProps;
-	static String EXPIRATION_POLICY= "expirationPolicy";
+	static String CACHE_EXPIRATION_ACTION = "cache.expiration.action";
+	static String CACHE_DURATION_INSEC = "cache.duration.insec";
 	
 	static {
 		String configFilename = "simpleCache.properties";
