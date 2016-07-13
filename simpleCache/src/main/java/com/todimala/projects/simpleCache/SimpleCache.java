@@ -21,7 +21,7 @@ public class SimpleCache<V> implements Cache<String, V>{
 		//return this.put(key, value, (long)2.0);
 		CacheObject<V> valueObj = new CacheObject<V>(value);
 		CacheObject<V> returnObj = (CacheObject<V>) _cache.put(key, valueObj);
-		valueObj.timerSubscription = addTimer(key, valueObj);
+		valueObj.timerSubscription = addCacheEntryExpiryTimer(key, valueObj);
 		if (returnObj != null) return returnObj.getValue();
 		return null; 
 	}
@@ -30,7 +30,7 @@ public class SimpleCache<V> implements Cache<String, V>{
 		CacheObject<V> valueObj = new CacheObject<V>(value);
 		if (d > 0) valueObj.setDuration(d);
 		CacheObject<V> returnObj = (CacheObject<V>) _cache.put(key, valueObj);
-		valueObj.timerSubscription = addTimer(key, valueObj);
+		valueObj.timerSubscription = addCacheEntryExpiryTimer(key, valueObj);
 		if (returnObj != null) return returnObj.getValue();
 		return null; 
 	}
@@ -40,7 +40,7 @@ public class SimpleCache<V> implements Cache<String, V>{
 		if (returnObj != null) {
 			logger.debug("Cancelled timer"); 
 			returnObj.timerSubscription.unsubscribe();
-			returnObj.timerSubscription = addTimer(key, returnObj);
+			returnObj.timerSubscription = addCacheEntryExpiryTimer(key, returnObj);
 			return returnObj.getValue();
 		}
 		return null;
@@ -52,20 +52,27 @@ public class SimpleCache<V> implements Cache<String, V>{
 		return null;
 	}
 	
-	private Subscription addTimer(final String key, final CacheObject<V> valueObj) {
+	private Subscription addCacheEntryExpiryTimer(final String key, final CacheObject<V> valueObj) {
 		Subscription timerSubscription = null;
 		valueObj.observable = Observable.timer(valueObj.getDuration(), TimeUnit.SECONDS);
 		Subscriber<Long> mySubscriber = new Subscriber<Long>() {
 		    @Override
 		    public void onNext(Long l) {
-		    	logger.info("Timer expired, clening up the cache."); 
-		    	remove(key);
+		    	logger.info(String.format("Timer expired: applying policy, %s, on the cached object.",
+		    			SimpleCacheProperties.EXPIRATION_POLICY));
+		    	String policy = SimpleCacheProperties.appProps.getProperty(SimpleCacheProperties.EXPIRATION_POLICY);
+		    	if ((null != policy) && policy.matches("delete")) {
+		    		remove(key);
+		    	} else if ((null != policy) && policy.matches("expire")) {
+		    		valueObj.setExpired(true);
+		    	} else {
+		    		logger.error(String.format("Unknown %s value: %s",
+		    				SimpleCacheProperties.EXPIRATION_POLICY, policy));
+		    	}
 		    }
 
 		    @Override
-		    public void onCompleted() { 
-		    	logger.info("Completed cleaning up the cache"); 
-		    }
+		    public void onCompleted() { }
 
 		    @Override
 		    public void onError(Throwable e) { 

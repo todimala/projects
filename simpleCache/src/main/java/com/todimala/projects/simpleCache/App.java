@@ -9,10 +9,16 @@ import org.apache.log4j.Logger;
 public class App 
 {
 	final static Logger logger = Logger.getLogger(App.class);
+	
     public static void main( String[] args )
     {
+    	// simple Test 
+    	App.test();
+    }
+    
+    public static void test() {
         SimpleCache<String> myCache = new SimpleCache<String>();
-        myCache.put("name", "Mickey", (long)6.0);
+        myCache.put("name", "Mickey", (long)4.0);
         logger.info("Before: The name value in cache is : " + myCache.get("name"));
         try {
 			Thread.sleep(5000);

@@ -10,6 +10,7 @@ public class CacheObject<T> {
 	private T value;
 	private Calendar lastAccessed;
 	private Long duration;
+	private boolean expired;
 	public Observable<Long> observable;
 	public Subscription timerSubscription;
 	
@@ -17,6 +18,7 @@ public class CacheObject<T> {
 		this.value = val;
 		this.duration = (long)3600.0; // One hour in seconds
 		this.lastAccessed = Calendar.getInstance();
+		this.setExpired(false);
 	}
 
 	public T getValue() {
@@ -43,5 +45,13 @@ public class CacheObject<T> {
 
 	public void setDuration(Long duration) {
 		this.duration = duration;
+	}
+
+	public boolean isExpired() {
+		return expired;
+	}
+
+	public void setExpired(boolean expired) {
+		this.expired = expired;
 	}
 }
