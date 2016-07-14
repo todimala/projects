@@ -12,6 +12,8 @@ public final class SimpleCacheProperties {
     static Properties appProps;
     static String CACHE_EXPIRATION_ACTION = "cache.expiration.action";
     static String CACHE_DURATION_INSEC = "cache.duration.insec";
+    static String CACHE_TUNE_FREQ_INSEC = "cache.tune.frequency.insec";
+    static String CACHE_TUNE_POLICY = "cache.tuning.policy";
     
     static {
         String configFilename = "simpleCache.properties";
@@ -25,7 +27,10 @@ public final class SimpleCacheProperties {
             
             //load the properties file
             appProps.load(configReadStream);
-            logger.info("Property: expirationPolicy = " + appProps.getProperty("expirationPolicy"));
+            logger.info("Property: CACHE_EXPIRATION_ACTION = " + appProps.getProperty(CACHE_EXPIRATION_ACTION));
+            logger.info("Property: CACHE_DURATION_INSEC = " + appProps.getProperty(CACHE_DURATION_INSEC));
+            logger.info("Property: CACHE_TUNE_FREQ_INSEC = " + appProps.getProperty(CACHE_TUNE_FREQ_INSEC));
+            logger.info("Property: CACHE_TUNE_POLICY = " + appProps.getProperty(CACHE_TUNE_POLICY));
         } catch (Exception iox) {
             
         }
