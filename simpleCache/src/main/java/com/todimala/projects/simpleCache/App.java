@@ -17,8 +17,8 @@ public class App
     }
     
     public static void test() {
-        SimpleCache<String> myCache = new SimpleCache<String>();
-        myCache.put("name", "Mickey", (long)4.0);
+        SimpleCache<String> myCache = (SimpleCache<String>) SimpleCache.getCache();
+        myCache.put("name", "Mickey");
         logger.info("Before: The name value in cache is : " + myCache.get("name"));
         try {
             Thread.sleep(360000);

@@ -7,41 +7,48 @@ import org.apache.log4j.Logger;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.schedulers.Schedulers;
 
 public class SimpleCache<V> implements Cache<String, V>{
 
     static final Logger logger = Logger.getLogger(SimpleCache.class);
-    ConcurrentHashMap<String, CacheObject<V>> cacheRepoMap;
+    ConcurrentHashMap<String, CacheObject<V>> cacheRepo;
     
     private Observable<Long> cacheTuneObservable;
     private Subscription cacheTuneSubscription;
     
-    SimpleCache() {
-        cacheRepoMap = new ConcurrentHashMap<>();
+    public static <V> SimpleCache<?> getCache() {
+    	return SingletonHolder.cacheInstance;
+    }
+    
+    private static class SingletonHolder {
+    	private static final SimpleCache cacheInstance = new SimpleCache();
+    }
+
+    private SimpleCache() {
+        cacheRepo = new ConcurrentHashMap<>();
         addCacheTuneSubscription();
     }
     
     public Observable<Long> getCacheTuneObservable() {
-		return cacheTuneObservable;
-	}
+        return cacheTuneObservable;
+    }
 
-	public void setCacheTuneObservable(Observable<Long> cacheTuneObservable) {
-		this.cacheTuneObservable = cacheTuneObservable;
-	}
+    public void setCacheTuneObservable(Observable<Long> cacheTuneObservable) {
+        this.cacheTuneObservable = cacheTuneObservable;
+    }
 
-	public Subscription getCacheTuneSubscription() {
-		return cacheTuneSubscription;
-	}
+    public Subscription getCacheTuneSubscription() {
+        return cacheTuneSubscription;
+    }
 
-	public void setCacheTuneSubscription(Subscription cacheTuneSubscription) {
-		this.cacheTuneSubscription = cacheTuneSubscription;
-	}
+    public void setCacheTuneSubscription(Subscription cacheTuneSubscription) {
+        this.cacheTuneSubscription = cacheTuneSubscription;
+    }
 
-	@Override
+    @Override
     public V put(String key, V value) {
         CacheObject<V> valueObj = new CacheObject<>(value);
-        CacheObject<V> returnObj = cacheRepoMap.put(key, valueObj);
+        CacheObject<V> returnObj = cacheRepo.put(key, valueObj);
         valueObj.setTimerSubscription(addCacheEntryExpiryTimer(key, valueObj));
         if (returnObj != null)
             return returnObj.getValue();
@@ -53,7 +60,7 @@ public class SimpleCache<V> implements Cache<String, V>{
         CacheObject<V> valueObj = new CacheObject<>(value);
         if (d > 0)
             valueObj.setDuration(d);
-        CacheObject<V> returnObj = cacheRepoMap.put(key, valueObj);
+        CacheObject<V> returnObj = cacheRepo.put(key, valueObj);
         valueObj.setTimerSubscription(addCacheEntryExpiryTimer(key, valueObj));
         if (returnObj != null)
             return returnObj.getValue();
@@ -62,7 +69,7 @@ public class SimpleCache<V> implements Cache<String, V>{
 
     @Override
     public V get(String key) {
-        CacheObject<V> returnObj = cacheRepoMap.get(key);
+        CacheObject<V> returnObj = cacheRepo.get(key);
         if (returnObj != null) {
             logger.debug("Cancelled timer"); 
             returnObj.getTimerSubscription().unsubscribe();
@@ -74,7 +81,7 @@ public class SimpleCache<V> implements Cache<String, V>{
 
     @Override
     public V remove(String key) {
-        CacheObject<V> returnObj = cacheRepoMap.remove(key);
+        CacheObject<V> returnObj = cacheRepo.remove(key);
         if (returnObj != null) 
             return returnObj.getValue();
         return null;
@@ -82,10 +89,10 @@ public class SimpleCache<V> implements Cache<String, V>{
     
     private Subscription addCacheEntryExpiryTimer(final String key, final CacheObject<V> valueObj) {
         if (valueObj == null) 
-        	return null;
+            return null;
         Subscription timerSubscription;
         valueObj.setObservable(Observable.timer(valueObj.getDuration(), TimeUnit.SECONDS));
-        Subscriber<Long> mySubscriber = new TimerSubscriber<>(key, valueObj);
+        Subscriber<Long> mySubscriber = new CacheEntryExpirySubscriber<>(key, valueObj);
         timerSubscription = valueObj.getObservable().subscribe(mySubscriber);
         logger.debug("Setting timer"); 
         return timerSubscription;
@@ -93,30 +100,33 @@ public class SimpleCache<V> implements Cache<String, V>{
     
     private boolean addCacheTuneSubscription() {
         long interval = Long.parseLong(
-        		SimpleCacheProperties.appProps.getProperty(
-        				SimpleCacheProperties.CACHE_TUNE_FREQ_INSEC));
+                SimpleCacheProperties.appProps.getProperty(
+                        SimpleCacheProperties.CACHE_TUNE_FREQ_INSEC));
         this.setCacheTuneObservable(Observable.interval(interval, TimeUnit.SECONDS));
-        Subscriber<Long> mySubscriber = new CacheTunerSubscriber<>();
+        Subscriber<Long> mySubscriber = new PeriodicCacheStoreExpirySubscriber<>(this.cacheRepo);
         this.setCacheTuneSubscription(this.getCacheTuneObservable().subscribe(mySubscriber));
         logger.debug("Setting Cache tune interval handler"); 
         return true;
     }
     
-    private class TimerSubscriber<Long> extends Subscriber<Long> {
+    /*
+     * A class for handling of when a cache entry expires
+     */
+    private class CacheEntryExpirySubscriber<Long> extends Subscriber<Long> {
         
         String key;
         CacheObject<V> valueObj;
         
-        TimerSubscriber(String key, CacheObject<V> valueObj) {
+        CacheEntryExpirySubscriber(String key, CacheObject<V> valueObj) {
             this.key = key;
             this.valueObj = valueObj;
         }
         
         @Override
         public void onNext(Long l) {
-            logger.info(String.format("Timer expired: applying policy, %s, on the cached object.",
-                    SimpleCacheProperties.CACHE_EXPIRATION_ACTION));
             String policy = SimpleCacheProperties.appProps.getProperty(SimpleCacheProperties.CACHE_EXPIRATION_ACTION);
+            logger.info(String.format("Timer expired: applying policy, %s=%s, on the cached object.",
+                    SimpleCacheProperties.CACHE_EXPIRATION_ACTION, policy));
             if ((null != policy) && policy.matches("delete")) {
                 remove(key);
             } else if ((null != policy) && policy.matches("mark")) {
@@ -138,18 +148,31 @@ public class SimpleCache<V> implements Cache<String, V>{
         }
     }
     
-    private class CacheTunerSubscriber<Long> extends Subscriber<Long> {
+    /*
+     * A class for periodically cleaning up all the expired cache entries
+     * in the cache store.
+     */
+    private class PeriodicCacheStoreExpirySubscriber<Long> extends Subscriber<Long> {
         
-    	String cacheTunePolicy;
-    	
-        CacheTunerSubscriber() {
-        	cacheTunePolicy = 
-        			SimpleCacheProperties.appProps.getProperty(SimpleCacheProperties.CACHE_TUNE_POLICY);
+        String cacheTunePolicy;
+        ConcurrentHashMap<String, CacheObject<V>> cacheStore;
+        
+        PeriodicCacheStoreExpirySubscriber(ConcurrentHashMap<String, CacheObject<V>> cache) {
+            this.cacheStore = cache;
+            cacheTunePolicy = 
+                    SimpleCacheProperties.appProps.getProperty(SimpleCacheProperties.CACHE_TUNE_POLICY);
         }
         
         @Override
         public void onNext(Long l) {
-        	logger.info("Implementing Cache tuning policy " + cacheTunePolicy);
+            logger.info("Running periodic CacheStore cleanup.");
+            cacheStore.forEach( (k, v) -> {
+            	if (v.isExpired()) {
+            		logger.info(String.format("Deleting expired cache entry: Key = %s and value = %s", 
+            			k, v.getValue()));
+            		cacheStore.remove(k);
+            	}
+            });
         }
 
         @Override

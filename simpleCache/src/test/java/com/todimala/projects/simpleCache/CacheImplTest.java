@@ -13,31 +13,29 @@ public class CacheImplTest extends TestCase {
     }
     
     public void testPutKV() {
-        SimpleCache<String> testCache = new SimpleCache<String>();
+        SimpleCache<String> testCache = (SimpleCache<String>) SimpleCache.getCache();
         assertNotNull(testCache);
         assertNull(testCache.put("name", "Mickey"));
     }
 
     public void testPutKVDuration() {
-        SimpleCache<Integer> testCache = new SimpleCache<Integer>();
+        SimpleCache<Integer> testCache = (SimpleCache<Integer>) SimpleCache.getCache();
         assertNull(testCache.put("Id", 123));
     }
 
     public void testGet() {
-        SimpleCache<String> testCache = new SimpleCache<String>();
-        assertNull(testCache.put("name", "Mickey"));
+        SimpleCache<String> testCache = (SimpleCache<String>) SimpleCache.getCache();
         assertEquals("Mickey", testCache.get("name"));
     }
 
     public void testRemove() {
-        SimpleCache<String> testCache = new SimpleCache<String>();
-        assertNull(testCache.put("name", "Mickey"));
+        SimpleCache<String> testCache = (SimpleCache<String>) SimpleCache.getCache();
         assertEquals("Mickey", testCache.remove("name"));
     }
 
     @Test
     public void testPutNegative() {
-        SimpleCache<String> testCache = new SimpleCache<String>();
+        SimpleCache<String> testCache = (SimpleCache<String>) SimpleCache.getCache();
         assertNull(testCache.put("name", "Mickey"));
         assertNull(testCache.get("name1"));
     }
