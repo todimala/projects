@@ -8,7 +8,7 @@ import org.apache.log4j.Logger;
 public final class SimpleCacheProperties {
 
     private SimpleCacheProperties(){}
-    static final Logger logger = Logger.getLogger(App.class);
+    static final Logger logger = Logger.getLogger(CacheManager.class);
     static Properties appProps;
     static String CACHE_EXPIRATION_ACTION = "cache.expiration.action";
     static String CACHE_DURATION_INSEC = "cache.duration.insec";
@@ -20,7 +20,7 @@ public final class SimpleCacheProperties {
         appProps = new Properties();
         InputStream configReadStream = null;
         try {    
-            configReadStream = App.class.getClassLoader().getResourceAsStream(configFilename);
+            configReadStream = CacheManager.class.getClassLoader().getResourceAsStream(configFilename);
             if (configReadStream == null) {
                 logger.error("Could not find properties file " + configFilename + " in the classpath");
             }

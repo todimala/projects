@@ -9,7 +9,7 @@ import rx.Subscription;
 
 public class CacheObject<T> {
 
-    static final Logger logger = Logger.getLogger(CacheObject.class);
+	static final Logger logger = Logger.getLogger(CacheObject.class);
     private T value;
     private double numAccess;
     private Calendar lastAccessed;
@@ -27,6 +27,11 @@ public class CacheObject<T> {
         this.lastAccessed = Calendar.getInstance();
         this.setExpired(false);
     }
+
+    @Override
+	public String toString() {
+		return "CacheObject [value=" + value + "]";
+	}
 
     public T getValue() {
         this.lastAccessed = Calendar.getInstance();

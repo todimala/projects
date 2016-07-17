@@ -11,12 +11,12 @@ import rx.Subscription;
 public class SimpleCache<V> implements Cache<String, V>{
 
     static final Logger logger = Logger.getLogger(SimpleCache.class);
-    ConcurrentHashMap<String, CacheObject<V>> cacheRepo;
+    private ConcurrentHashMap<String, CacheObject<V>> cacheRepo;
     
     private Observable<Long> cacheTuneObservable;
     private Subscription cacheTuneSubscription;
     
-    public static <V> SimpleCache<?> getCache() {
+    public static <V> SimpleCache getCache() {
     	return SingletonHolder.cacheInstance;
     }
     
@@ -27,6 +27,10 @@ public class SimpleCache<V> implements Cache<String, V>{
     private SimpleCache() {
         cacheRepo = new ConcurrentHashMap<>();
         addCacheTuneSubscription();
+    }
+    
+    public int size() {
+    	return cacheRepo.size();
     }
     
     public Observable<Long> getCacheTuneObservable() {
